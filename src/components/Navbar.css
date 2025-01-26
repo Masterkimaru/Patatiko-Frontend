@@ -1,0 +1,190 @@
+/* Navbar base styles */
+.navbar {
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+}
+
+.navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* Navbar brand */
+.navbar .brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.brand-logo {
+  height: 40px; /* Adjust as needed */
+  width: auto;  /* Maintain aspect ratio */
+  margin-right: 10px; /* Add space between logo and text */
+}
+
+/* Navbar links */
+.navbar .nav-links a {
+  margin: 0 1rem;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* Navbar links hover effect */
+.navbar .nav-links a:hover {
+  text-decoration: underline;
+}
+
+/* Hamburger Menu Styles */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 30px;
+  height: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hamburger.open .hamburger-icon:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.open .hamburger-icon:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open .hamburger-icon:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.hamburger-icon {
+  width: 100%;
+  height: 3px;
+  background-color: white;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+/* Auth Section */
+.auth-section {
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown {
+  position: relative;
+}
+
+.user-button {
+  background: none;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.dropdown-item {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+}
+
+.dropdown-item:hover {
+  background-color: #f1f1f1;
+}
+
+.auth-button {
+  padding: 8px 16px;
+  color: white;
+  background-color: #007bff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.auth-button:hover {
+  background-color: #0056b3;
+}
+
+/* Ensure the Login/Sign Up appears in the hamburger menu */
+.nav-links .auth-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-links .auth-button {
+  padding: 5px 10px;
+  text-align: center;
+  background-color: #007bff;
+  border-radius: 20px;
+  margin-top: 10px;
+}
+
+.nav-links .auth-button:hover {
+  background-color: #0f1214;
+}
+
+/* Show hamburger on small screens */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  /* Hide nav-links by default on small screens */
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 47px;
+    right: 20px;
+    background-color: #333;
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    visibility: hidden; /* Hide links by default */
+    opacity: 0; /* Set initial opacity to 0 */
+    transition: opacity 0.3s ease, visibility 0.3s ease; /* Smooth transition for both opacity and visibility */
+  }
+
+  /* Show nav-links when menu is active */
+  .nav-links.active {
+    visibility: visible; /* Make links visible */
+    opacity: 1; /* Set opacity to 1 */
+    z-index: 10;
+  }
+
+  .nav-links a {
+    margin: 1rem 0;
+    text-align: center;
+  }
+}
