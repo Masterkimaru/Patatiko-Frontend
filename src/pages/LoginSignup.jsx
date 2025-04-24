@@ -2,8 +2,10 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
+import { auth, googleProvider } from '../firebase';
+import { signInWithPopup } from 'firebase/auth';
 import './LoginSignup.css';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Eye icons for showing/hiding password
+import { FaEye, FaEyeSlash, FaGoogle } from 'react-icons/fa';
 
 const LoginSignup = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,19 +13,18 @@ const LoginSignup = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [referralCode, setReferralCode] = useState(''); // Referral code state for registration
-  const [phoneNumber, setPhoneNumber] = useState(''); // Phone number state
+  const [referralCode, setReferralCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+
   const { setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Check if passwords match during signup
     if (!isLogin && password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -32,35 +33,48 @@ const LoginSignup = () => {
 
     try {
       if (isLogin) {
-        const response = await axios.post(
-          'http://localhost:5000/api/users/login',
+        const { data } = await axios.post(
+          'https://patatiko-backend.onrender.com/api/users/login',
           { email, password }
         );
-
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('userId', response.data.userId);
-
-        // Set the user in context
-        setUser(response.data.user);
-        navigate('/');
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.userId);
+        setUser(data.user);
       } else {
-        const response = await axios.post(
-          'http://localhost:5000/api/users/register',
-          {
-            name,
-            email,
-            password,
-            role: 'USER', // Hardcoded as USER
-            referralCode,
-            phoneNumber, // Send phone number in registration request
-          }
+        await axios.post(
+          'https://patatiko-backend.onrender.com/api/users/register',
+          { name, email, password, role: 'USER', referralCode, phoneNumber }
         );
         alert('Registration successful! Please log in.');
         setIsLogin(true);
       }
-      setError('');
-    } catch (err) {
+      navigate('/');
+    } catch {
       setError(isLogin ? 'Invalid email or password' : 'Error registering user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      const idToken = await firebaseUser.getIdToken();
+
+      const { data } = await axios.post(
+        'https://patatiko-backend.onrender.com/api/users/google',
+        { idToken, referralCode, phoneNumber }
+      );
+
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setError('Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -70,9 +84,7 @@ const LoginSignup = () => {
     <div className="form-container">
       <div className="form-wrapper">
         {loading ? (
-          <div className="loading-indicator">
-            <i className="ticket-icon">🎟️</i>
-          </div>
+          <div className="loading-indicator">🎟️</div>
         ) : (
           <>
             <div className={`form ${isLogin ? 'show-login' : 'show-signup'}`}>
@@ -86,7 +98,7 @@ const LoginSignup = () => {
                       <input
                         type="text"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={e => setName(e.target.value)}
                         required
                       />
                     </div>
@@ -95,7 +107,7 @@ const LoginSignup = () => {
                       <input
                         type="text"
                         value={referralCode}
-                        onChange={(e) => setReferralCode(e.target.value)}
+                        onChange={e => setReferralCode(e.target.value)}
                       />
                     </div>
                     <div className="input-group">
@@ -103,7 +115,7 @@ const LoginSignup = () => {
                       <input
                         type="text"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        onChange={e => setPhoneNumber(e.target.value)}
                         required
                       />
                     </div>
@@ -114,7 +126,7 @@ const LoginSignup = () => {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -124,7 +136,7 @@ const LoginSignup = () => {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       required
                     />
                     <span
@@ -136,23 +148,33 @@ const LoginSignup = () => {
                   </div>
                 </div>
                 {!isLogin && (
-                  <>
-                    <div className="input-group">
-                      <label>Confirm Password</label>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </>
+                  <div className="input-group">
+                    <label>Confirm Password</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                 )}
                 <button type="submit" className="btn-primary">
                   {isLogin ? 'Login' : 'Sign Up'}
                 </button>
               </form>
+
+              <div className="social-login">
+                <button
+                  className="btn-google"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                >
+                  <FaGoogle />
+                  <span>Sign in with Google</span>
+                </button>
+              </div>
             </div>
+
             <div className="toggle-section">
               <p>{isLogin ? 'Need an account?' : 'Already have an account?'}</p>
               <button

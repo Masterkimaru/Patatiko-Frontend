@@ -1,0 +1,136 @@
+/* Download.css */
+
+.download-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.download-container h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+  font-size: 2em;
+}
+
+.payment-info {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 30px;
+}
+
+.payment-info p {
+  margin: 10px 0;
+  font-size: 1.1em;
+  color: #555;
+}
+
+.show-details {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.show-details h2 {
+  margin-top: 0;
+  font-size: 1.8em;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.show-details p {
+  margin: 10px 0;
+  color: #555;
+  font-size: 1em;
+}
+
+.occurrence {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #eef6fc;
+  border-radius: 5px;
+}
+
+.occurrence p {
+  margin: 5px 0;
+  font-size: 1em;
+  color: #444;
+}
+
+.occurrence ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.occurrence li {
+  padding: 5px 10px;
+  background-color: #dceeff;
+  margin-bottom: 5px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  color: #333;
+}
+
+.error {
+  color: #d8000c;
+  background-color: #ffbaba;
+  border: 1px solid #d8000c;
+  padding: 15px;
+  text-align: center;
+  border-radius: 6px;
+  margin-top: 20px;
+}
+.unique-token {
+  background-color: #e3f2fd;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 20px 0;
+  border: 1px solid #90caf9;
+  font-size: 1.1em;
+}
+
+.unique-token strong {
+  color: #1976d2;
+}
+
+.download-btn {
+  background: #2196f3;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: all 0.3s ease;
+  display: block;
+  width: fit-content;
+  margin: 30px auto 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.download-btn:hover {
+  background: #1976d2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading {
+  text-align: center;
+  color: #666;
+  font-size: 1.2em;
+  padding: 20px;
+}

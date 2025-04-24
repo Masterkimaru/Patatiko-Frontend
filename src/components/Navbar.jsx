@@ -16,7 +16,7 @@ const Navbar = () => {
     const userId = localStorage.getItem('userId');
     if (token && userId && !user) {
       axios
-        .get(`http://localhost:5000/api/users/profile/${userId}`, {
+        .get(`https://patatiko-backend.onrender.com/api/users/profile/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((response) => {

@@ -3,6 +3,7 @@ import { getShows, getShowDetails, getTicketTypes, createBooking, generateReferr
 import YouTube from 'react-youtube';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
+import ChatIcon from './ChatIcon';
 import './Home.css';
 
 const extractVideoId = (url) => {
@@ -47,6 +48,8 @@ const Home = () => {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [referralLink, setReferralLink] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [chatbotOpen, setChatbotOpen] = useState(false);
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
 
@@ -69,9 +72,10 @@ const Home = () => {
       const response = await getShowDetails(show.id);
       setTicketDetails(response.data);
     } catch (error) {
-      console.error('Error fetching ticket details:', error);
+      console.error('Error fetching show details:', error);
     }
   };
+
   const handleGenerateReferralLink = async () => {
     try {
       const response = await generateReferralLink(selectedShow.id);
@@ -84,8 +88,8 @@ const Home = () => {
 
   const handleCopyLink = () => {
     if (referralLink) {
-      navigator.clipboard.writeText(referralLink); // Use the Clipboard API to copy the link
-      setCopied(true); // Set the copied state to true
+      navigator.clipboard.writeText(referralLink);
+      setCopied(true);
       alert('Referral link copied to clipboard!');
     }
   };
@@ -97,10 +101,8 @@ const Home = () => {
       navigate('/login-signup');
       return;
     }
-
     setIsModalOpen(true);
     setModalShow(show);
-
     try {
       const response = await getTicketTypes(show.id);
       setTicketDetails(response.data);
@@ -117,11 +119,9 @@ const Home = () => {
   };
 
   const handleTicketTypeChange = (ticketType) => {
-    // Convert the ticket type to 'Regular', 'VIP', 'Couple', etc.
-    const formattedType = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
-    setSelectedTicketType(formattedType);
+    setSelectedTicketType(ticketType);
   };
-  
+
   const handleTicketQuantityChange = (event) => {
     setTicketQuantity(Number(event.target.value));
   };
@@ -129,63 +129,35 @@ const Home = () => {
   const handleConfirmPurchase = async () => {
     if (!selectedTicketType) {
       alert('Please select a ticket type');
-    } else {
-      alert(`Ticket(s) for ${selectedTicketType} confirmed! Quantity: ${ticketQuantity}`);
-  
-      // Fetch the show details to get the price
-      const show = modalShow; // Assuming modalShow contains the selected show details
-  
-      // Calculate the ticket price based on the selected ticket type
-      let ticketPrice;
-      switch (selectedTicketType) {
-        case 'Regular':
-          ticketPrice = show.priceRegular;
-          break;
-        case 'Vip':
-          ticketPrice = show.priceVIP;
-          break;
-        case 'Couple':
-          ticketPrice = show.priceCouple;
-          break;
-        case 'GroupOf5':
-          ticketPrice = show.priceGroupOf5;
-          break;
-        case 'Advance':
-          ticketPrice = show.priceAdvance;
-          break;
-        default:
-          return alert('Invalid ticket type');
-      }
-  
-      // Calculate the total price
-      const totalPrice = ticketPrice * ticketQuantity;
-  
-      // Prepare the data to be sent to the backend
-      const bookingData = {
-        userId: user.id, // Assuming 'user' context provides user info
-        showId: show.id, // Assuming modalShow holds the current show data
-        tickets: ticketQuantity,
-        ticketType: selectedTicketType,
-        totalPrice: totalPrice, // Include totalPrice in the request body
-      };
-  
-      try {
-        // Create the booking by sending the data to the backend
-        const response = await createBooking(bookingData);
-        console.log('Booking response:', response.data);
-  
-        // Navigate to the bookings page
-        navigate('/bookings');
-      } catch (error) {
-        console.error('Error creating booking:', error);
-        alert('There was an error with your booking. Please try again.');
-      }
-  
-      // Close the modal after booking
+      return;
+    }
+    
+    const ticketPrice = ticketDetails.ticketTypes[selectedTicketType];
+    if (ticketPrice === undefined) {
+      return alert('Invalid ticket type selected');
+    }
+    const totalPrice = ticketPrice * ticketQuantity;
+    const bookingData = {
+      userId: user.id,
+      showId: modalShow.id,
+      tickets: ticketQuantity,
+      ticketType: selectedTicketType,
+      totalPrice,
+    };
+
+    setBookingLoading(true);
+    try {
+      const response = await createBooking(bookingData);
+      console.log('Booking response:', response.data);
+      navigate('/bookings');
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      alert('There was an error with your booking. Please try again.');
+    } finally {
+      setBookingLoading(false);
       setIsModalOpen(false);
     }
   };
-  
 
   return (
     <div className="home">
@@ -200,8 +172,8 @@ const Home = () => {
             <button
               className="back-button"
               onClick={() => {
-                setSelectedShow(null); // Go back to the list of all shows
-                setIsModalOpen(false); // Close the ticket modal if it's open
+                setSelectedShow(null);
+                setIsModalOpen(false);
               }}
             >
               Back
@@ -223,10 +195,7 @@ const Home = () => {
                 <h2>{show.name}</h2>
                 <p>{show.description}</p>
                 {!isModalOpen && (
-                  <button
-                    className="buy-ticket-button"
-                    onClick={(e) => handleBuyTicketClick(e, show)}
-                  >
+                  <button className="buy-ticket-button" onClick={(e) => handleBuyTicketClick(e, show)}>
                     Buy Ticket
                   </button>
                 )}
@@ -271,8 +240,16 @@ const Home = () => {
                           return (
                             <li key={timing.id}>
                               {startTime.toLocaleDateString()} -{' '}
-                              {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to{' '}
-                              {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {startTime.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                timeZone: 'Africa/Nairobi' 
+                              })} to{' '}
+                              {endTime.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                timeZone: 'Africa/Nairobi' 
+                              })}
                             </li>
                           );
                         })}
@@ -284,19 +261,15 @@ const Home = () => {
                 )}
               </div>
             )}
-
             {!isModalOpen && (
-              <button
-                className="buy-ticket-button"
-                onClick={(e) => handleBuyTicketClick(e, selectedShow)}
-              >
+              <button className="buy-ticket-button" onClick={(e) => handleBuyTicketClick(e, selectedShow)}>
                 Buy Ticket
               </button>
             )}
           </div>
         )}
       </div>
-      {/* Referral Link Button */}
+
       {selectedShow && (
         <button onClick={handleGenerateReferralLink}>Generate Referral Link</button>
       )}
@@ -308,50 +281,40 @@ const Home = () => {
         </div>
       )}
 
-      {/* Ticket Selection Modal */}
       {isModalOpen && modalShow && (
         <div className="ticket-modal">
           <div className="modal-content">
             <h3>Buy Tickets for {modalShow.name}</h3>
             {ticketDetails && ticketDetails.ticketTypes ? (
               <div>
-                {['regular', 'vip', 'couple', 'groupOf5', 'advance'].map((type) => (
+                {Object.keys(ticketDetails.ticketTypes).map((type) => (
                   <div key={type}>
-                    {ticketDetails.ticketTypes[type] !== undefined ? (
-                      <label
-                        className={
-                          selectedTicketType === type.charAt(0).toUpperCase() + type.slice(1)
-                            ? 'selected-ticket'
-                            : ''
-                        }
-                      >
-                        <input
-                          type="radio"
-                          name="ticketType"
-                          value={type}
-                          checked={selectedTicketType === type.charAt(0).toUpperCase() + type.slice(1)}
-                          onChange={() => handleTicketTypeChange(type)}
-                        />
-                        {type.charAt(0).toUpperCase() + type.slice(1)} - Ksh{' '}
-                        {ticketDetails.ticketTypes[type]}
-                      </label>
-                    ) : (
-                      <p>{type.charAt(0).toUpperCase() + type.slice(1)}: Not Available</p>
-                    )}
+                    <label className={selectedTicketType === type ? 'selected-ticket' : ''}>
+                      <input
+                        type="radio"
+                        name="ticketType"
+                        value={type}
+                        checked={selectedTicketType === type}
+                        onChange={() => handleTicketTypeChange(type)}
+                      />
+                      {type} - Ksh {ticketDetails.ticketTypes[type]}
+                    </label>
                   </div>
                 ))}
                 <div>
                   <label>
-                    No. of Tickets:
+                    Quantity:{' '}
                     <input
                       type="number"
-                      value={ticketQuantity}
                       min="1"
-                      onChange={handleTicketQuantityChange}
+                      value="1"
+                      disabled
                     />
                   </label>
                 </div>
-                <button onClick={handleConfirmPurchase}>Confirm Purchase</button>
+                <button onClick={handleConfirmPurchase} disabled={bookingLoading}>
+                  {bookingLoading ? 'Confirming.....' : 'Confirm Purchase'}
+                </button>
               </div>
             ) : (
               <p>Loading ticket details...</p>
@@ -361,8 +324,48 @@ const Home = () => {
         </div>
       )}
 
+      {/* Chatbot Window */}
+      {chatbotOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '80px',
+            right: '20px',
+            width: '300px',
+            height: '400px',
+            backgroundColor: '#fff',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            zIndex: 1000,
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '5px' }}>
+            <button 
+              onClick={() => setChatbotOpen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
+            >
+              ✖
+            </button>
+          </div>
+          <iframe
+            src="https://www.chatbase.co/chatbot-iframe/jN9iQmYwDLWZ6G0VOBM-y"
+            width="100%"
+            height="90%"
+            frameBorder="0"
+          ></iframe>
+        </div>
+      )}
 
-
+      {/* Chatbot Toggle Icon using Portal */}
+      {!chatbotOpen && (
+        <ChatIcon onClick={() => setChatbotOpen(true)} />
+      )}
     </div>
   );
 };

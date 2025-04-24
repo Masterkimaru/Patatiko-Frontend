@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Replace with your backend URL
+  baseURL: 'https://patatiko-backend.onrender.com/api', // Replace with your backend URL
   headers: {
     'Content-Type': 'application/json',
   },
@@ -25,12 +25,9 @@ export const generateReferralLink = (showId) => api.get(`/shows/${showId}/genera
 
 // Bookings-related API requests
 export const createBooking = (data) => api.post('/bookings/create', data);
-export const getUserBookings = (userId) => api.get(`/bookings/${userId}`);
+export const getUserBookings = (userId) => api.get(`/bookings/user/${userId}`);
 
 // Payments-related API requests
-export const getUserPayments = (userId) => api.get(`/payments/${userId}`);
-export const deletePayment = (paymentId) => api.delete(`/payments/delete/${paymentId}`);
-export const initiateSTKPush = (data) => api.post('/payments/stkpush', data);
-export const sendKCBCallback = (callbackData) => api.post('/payments/callback', callbackData);
+export const getUserPayments = (userId) => api.get(`/payments/user/${userId}`);
 
 export default api;

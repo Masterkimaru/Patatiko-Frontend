@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
-import QRCode from 'qrcode';  // Import QRCode library 
-import { getUserBookings, initiateSTKPush, sendKCBCallback,   getShowByName } from '../services/api'; // Import the sendKCBCallback function
+import QRCode from 'qrcode';
+import { getUserBookings, getShowByName } from '../services/api';
 import './MyBookings.css';
+
+// Mapping of ticket types to their respective payment links based on dynamic event data
+const paymentLinks = {
+  Student: 'https://short.payhero.co.ke/s/b9jBg46tqNvFx64vLCxApB',
+  Advance: 'https://short.payhero.co.ke/s/BNJW5SLNqkWZeqnuZwo6Lo',
+  Gate: 'https://short.payhero.co.ke/s/hthPRb3qCre6Ui432B6oQp',
+};
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [ticket, setTicket] = useState(null); // State for the generated ticket
-  //const [showDetails, setShowDetails] = useState(null); // State for show details
+  // Ticket state is kept if you later wish to offer a download (e.g., QR code ticket)
+  const [ticket, setTicket] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,16 +24,12 @@ const MyBookings = () => {
     const userId = localStorage.getItem('userId');
 
     if (!token || !userId) {
-      setError('Sorry, You will have to sign in to access your bookings');
+      setError('Sorry, you will have to sign in to access your bookings');
     } else {
       const fetchBookings = async () => {
         try {
           const response = await getUserBookings(userId);
-          if (response.data.length === 0) {
-            setBookings([]);
-          } else {
-            setBookings(response.data);
-          }
+          setBookings(response.data);
         } catch (err) {
           setError('Error fetching bookings');
         }
@@ -44,164 +43,42 @@ const MyBookings = () => {
     navigate('/login-signup');
   };
 
+  // This function maps the booking's ticket type to its payment link and redirects the user
   const handlePayClick = (booking) => {
-    console.log('Selected Booking:', booking);
-    setSelectedBooking(booking);
-    setShowModal(true);
-  };
-
-  const handleModalClose = () => {
-    setShowModal(false);
-    setPhoneNumber('');
-  };
-
-  const handleSTKPush = async () => {
-    if (!phoneNumber) {
-      alert('Please enter your phone number');
-      return;
-    }
-  
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      alert('User is not logged in. Please sign in to proceed with the payment.');
-      return;
-    }
-  
-    setLoading(true);
-  
-    try {
-      // Step 1: Initiate the STK push
-      const response = await initiateSTKPush({
-        phoneNumber,
-        bookingId: selectedBooking.id,
-        amount: selectedBooking.totalPrice,
-        userId,
+    const ticketType = booking.ticketType; // Expecting values like "Student", "Early Bird", "Gate"
+    const baseLink = paymentLinks[ticketType];
+    if (baseLink) {
+      // Optionally, append query parameters for additional tracking (like amount and booking reference)
+      const params = new URLSearchParams({
+        amount: booking.totalPrice,
+        reference: booking.id,
       });
-  
-      if (response.status === 200) {
-        alert('Payment initiated. Please check your phone to complete the payment.');
-  
-        // Step 2: Send callback data to verify payment
-        const callbackData = {
-          status: "Completed", // Sample data from backend
-          message: "Payment successful",
-          amount: selectedBooking.totalPrice,
-          mpesaReceiptNumber: 'TAP0FSSZBS', // Sample receipt number from backend
-          phoneNumber: phoneNumber,
-        };
-  
-        const callbackResponse = await sendKCBCallback(callbackData);
-  
-        if (callbackResponse.status === 200) {
-          const callbackData = callbackResponse.data;
-  
-          // Log the entire callback structure to inspect its format
-          console.log("Received Callback Data:", JSON.stringify(callbackData, null, 2));
-  
-          // Now, match the expected data directly
-          if (callbackData.status === "Completed" && callbackData.message === "Payment successful") {
-            const amount = callbackData.amount;
-            const receiptNumber = callbackData.mpesaReceiptNumber;
-            const phone = callbackData.phoneNumber;
-  
-            // Prepare ticket data and set it for the user
-            const ticketData = { 
-              amount, 
-              receiptNumber, 
-              phone 
-            };
-            setTicket(ticketData);
-            alert('Payment successful. Your ticket is ready for download.');
-          } else {
-            alert(`Payment failed: ${callbackData.message}`);
-          }
-        } else {
-          alert('Payment verification failed. Please try again.');
-        }
-      } else {
-        alert('Payment failed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error initiating payment:', error);
-      alert('Payment failed. Please try again.');
-    } finally {
-      setLoading(false);
-      handleModalClose();
+      const paymentLink = `${baseLink}?${params.toString()}`;
+      window.location.href = paymentLink;
+    } else {
+      alert('No payment link available for this ticket type.');
     }
   };
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
+  // Example function to download a ticket as a QR code (if ticket info is available)
   const handleDownloadTicket = async () => {
-    if (ticket && selectedBooking && selectedBooking.title) {
+    if (ticket && ticket.reference) {
       try {
-        console.log('Fetching details for Show Title:', selectedBooking.title);
-  
-        // Fetch the show details by title (assuming getShowByName API exists)
-        const response = await getShowByName(selectedBooking.title);  
-        const showDetails = response.data;
-        console.log('Show Details:', showDetails);
-  
-        // Assuming showDetails contains occurrences and other information
-        const showId = showDetails.id;
-        const occurrences = showDetails.occurrences;
-  
-        // Format occurrences to include day of the week and human-readable start time
-        const formattedOccurrences = occurrences.map((occurrence) => {
-          return occurrence.timings.map((timing) => {
-            return {
-              dayOfWeek: occurrence.dayOfWeek,
-              startTime: moment(timing.startTime).format('dddd, MMMM Do YYYY, h:mm A'),
-              endTime: moment(timing.endTime).format('h:mm A'),
-            };
-          });
-        }).flat();
-  
-        // Create the enhanced ticket object with showId, occurrences, and other details
-        const enhancedTicket = {
-          ...ticket,
-          showId: showId,
-          showName: showDetails.name,
-          showVenue: showDetails.venue,
-          showDescription: showDetails.description,
-          showCast: showDetails.cast,
-          occurrences: formattedOccurrences,
-          ticketType: selectedBooking.ticketType,
-        };
-  
-        // Generate the QR code from the enhanced ticket object
-        const qrCodeData = JSON.stringify(enhancedTicket);  // The data you want to encode in the QR code
-        const qrCodeUrl = await QRCode.toDataURL(qrCodeData);  // Generate the QR code as a data URL
-  
-        // Create an anchor element to download the QR code image
+        const qrCodeData = JSON.stringify(ticket);
+        const qrCodeUrl = await QRCode.toDataURL(qrCodeData);
         const element = document.createElement('a');
-        element.href = qrCodeUrl;  // Set the href to the generated QR code image
-        element.download = `Ticket_${selectedBooking.id}.png`;  // Set the download file name
+        element.href = qrCodeUrl;
+        element.download = `Ticket_${ticket.reference}.png`;
         document.body.appendChild(element);
-        element.click();  // Trigger the download
+        element.click();
       } catch (error) {
-        console.error('Error fetching show details:', error.response || error);
-        alert('Failed to fetch show details. Please try again.');
+        console.error('Error generating QR code:', error);
+        alert('Failed to generate ticket QR code.');
       }
     } else {
-      console.error('Selected booking or show title is missing!');
-      alert('No valid booking or show details found. Please check your booking.');
+      alert('No ticket available to download.');
     }
   };
-  
-  
-  
-  
-  
-  
 
   return (
     <div className="my-bookings-container">
@@ -253,34 +130,6 @@ const MyBookings = () => {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Complete Payment</h2>
-            <p>Enter your phone number to complete the payment:</p>
-            <input
-              type="text"
-              placeholder="Phone Number"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="phone-input"
-            />
-            <div className="modal-actions">
-              <button onClick={handleSTKPush} className="submit-button">
-                {loading ? (
-                  <div className="loading-spinner"></div>
-                ) : (
-                  'Submit'
-                )}
-              </button>
-              <button onClick={handleModalClose} className="cancel-button">
-                Cancel
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
