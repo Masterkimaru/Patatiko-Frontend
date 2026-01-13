@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://patatiko-backend.onrender.com/api', // Replace with your backend URL
+  baseURL: 'https://patatiko-backend-ggkr.onrender.com/api', // Replace with your backend URL
   headers: {
     'Content-Type': 'application/json',
   },

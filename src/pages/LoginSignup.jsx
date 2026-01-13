@@ -34,7 +34,7 @@ const LoginSignup = () => {
     try {
       if (isLogin) {
         const { data } = await axios.post(
-          'https://patatiko-backend.onrender.com/api/users/login',
+          'https://patatiko-backend-ggkr.onrender.com/api/users/login',
           { email, password }
         );
         localStorage.setItem('token', data.token);
@@ -42,7 +42,7 @@ const LoginSignup = () => {
         setUser(data.user);
       } else {
         await axios.post(
-          'https://patatiko-backend.onrender.com/api/users/register',
+          'https://patatiko-backend-ggkr.onrender.com/api/users/register',
           { name, email, password, role: 'USER', referralCode, phoneNumber }
         );
         alert('Registration successful! Please log in.');
@@ -65,7 +65,7 @@ const LoginSignup = () => {
       const idToken = await firebaseUser.getIdToken();
 
       const { data } = await axios.post(
-        'https://patatiko-backend.onrender.com/api/users/google',
+        'https://patatiko-backend-ggkr.onrender.com/api/users/google',
         { idToken, referralCode, phoneNumber }
       );
 
